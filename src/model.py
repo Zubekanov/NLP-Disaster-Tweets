@@ -26,11 +26,11 @@ if 'id' in X.columns:
     X = X.drop(columns=['id'])
 
 features_text = ["text"]
-features_cat  = ["keyword", "location"]
+features_cat  = ["keyword"]
 
 transformer_text = make_pipeline(
     FunctionTransformer(lambda X: X.squeeze(), validate=False),
-    TfidfVectorizer(max_features=10000)
+    TfidfVectorizer(max_features=1000)
 )
 transformer_cat  = make_pipeline(
     SimpleImputer(strategy='constant', fill_value='NA'),
@@ -51,9 +51,7 @@ X_valid_trans = preprocessor.transform(X_valid)
 input_shape = X_train_trans.shape[1]
 model = keras.Sequential([
     layers.InputLayer(shape=(input_shape,)),
-    layers.Dense(256, activation="relu"),
-    layers.Dropout(0.3),
-    layers.Dense(256, activation="relu"),
+    layers.Dense(64, activation="relu"),
     layers.Dropout(0.3),
     layers.Dense(1, activation="sigmoid"),
 ])
@@ -64,14 +62,38 @@ model.compile(
     metrics=['accuracy']
 )
 
+early_stopping = keras.callbacks.EarlyStopping(
+    patience=5,
+    min_delta=0.001,
+    restore_best_weights=True,
+)
+
 history = model.fit(
     X_train_trans, y_train,
     validation_data=(X_valid_trans, y_valid),
     batch_size=512,
-    epochs=200,
+    epochs=100,
+    callbacks=[early_stopping],
 )
 
 history_df = pd.DataFrame(history.history)
 history_df.loc[:, ['loss', 'val_loss']].plot(title="Cross-entropy")
 history_df.loc[:, ['accuracy', 'val_accuracy']].plot(title="Accuracy")
 plt.show()
+
+# Apply model to test set for submission
+test = pd.read_csv('data/test.csv')
+ids = test['id']
+
+X_test = test.drop(columns=['id'])
+X_test_trans = preprocessor.transform(X_test)
+
+y_pred_probs = model.predict(X_test_trans, batch_size=512)
+y_pred = (y_pred_probs.flatten() > 0.5).astype(int)
+
+submission = pd.DataFrame({
+    'id': ids,
+    'target': y_pred
+})
+submission.to_csv('submission.csv', index=False)
+print("Saved submission.csv with", len(submission), "rows")
