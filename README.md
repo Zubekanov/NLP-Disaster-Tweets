@@ -40,7 +40,7 @@ The code can be run by inserting the relevant `.csv` files into the `data/` dire
 - Dropped `location` from categorical features, as it was very noisy  
   (e.g., "Happily Married with 2 kids", "VISIT MY YOUTUBE CHANNEL.")  
 
-**Validation loss reaches its minimum later, indicating some improvement.**
+**Validation loss reaches its minimum later, but still has the same minimum value.**
 
 ![graph4](https://github.com/user-attachments/assets/4f5f8599-ee13-4eaa-ad8e-a1c9c44bd4d7)
 
